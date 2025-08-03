@@ -1,3 +1,4 @@
+// app/components/Dashboard.tsx
 import Card from "./Card";
 
 // Placeholder data for recent transactions

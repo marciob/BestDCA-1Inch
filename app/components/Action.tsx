@@ -23,7 +23,7 @@ export default function Action() {
           </svg>
         </button>
 
-        {/* From Chain Selector (Now locked to a supported EVM chain) */}
+        {/* From Chain Selector */}
         <ChainSelector chainName="Polygon" chainLogo="/polygon_logo.png" />
       </div>
       <div className="mt-4 flex items-center justify-between">
@@ -33,6 +33,28 @@ export default function Action() {
           placeholder="1,000"
         />
         <TokenSelector tokenName="USDC" tokenLogo="/usdc_logo.png" />
+      </div>
+
+      {/* --- NEW DURATION SECTION --- */}
+      <div className="mt-4 border-t border-gray-700 pt-4">
+        <div className="flex items-center justify-between">
+          <label
+            htmlFor="duration"
+            className="text-sm font-medium text-gray-400"
+          >
+            Over a period of
+          </label>
+          <div className="flex w-2/5 items-center gap-2">
+            <input
+              id="duration"
+              name="duration"
+              type="number"
+              placeholder="30"
+              className="w-full rounded-md bg-gray-900 text-right font-medium"
+            />
+            <span className="text-sm text-gray-400">Days</span>
+          </div>
+        </div>
       </div>
     </div>
   );

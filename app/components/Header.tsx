@@ -1,3 +1,4 @@
+// app/components/Header.tsx
 export default function Header() {
   return (
     <header className="w-full border-b border-gray-800 p-4">

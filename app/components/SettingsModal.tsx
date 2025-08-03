@@ -29,22 +29,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </button>
         </div>
         <div className="mt-6 space-y-4">
-          <div>
-            <label
-              htmlFor="duration"
-              className="block text-sm font-medium text-gray-400"
-            >
-              Duration (in Days)
-            </label>
-            <div className="mt-1">
-              <input
-                type="number"
-                name="duration"
-                id="duration"
-                placeholder="30"
-              />
-            </div>
-          </div>
+          {/* Duration input has been removed from here */}
           <div>
             <label
               htmlFor="slippage"
