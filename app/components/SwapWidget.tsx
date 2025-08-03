@@ -8,14 +8,16 @@ import {
   useAccount,
   useWriteContract,
   useWaitForTransactionReceipt,
+  useReadContracts,
 } from "wagmi";
-import { baseSepolia } from "wagmi/chains";
+import { baseSepolia } from "viem/chains";
 import { parseEther } from "viem";
 import { formatDistance } from "date-fns";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import SettingsModal from "./SettingsModal";
 import Action from "./Action";
 import Receive from "./Receive";
+import { useVaultInfo } from "@/app/hooks/useVaultInfo";
 import ChainSelector from "./ChainSelector";
 import { VAULT_ABI, VAULT_CONTRACT_ADDRESS } from "@/lib/constants";
 import { useHasMounted } from "@/app/hooks/useHasMounted";
@@ -32,6 +34,7 @@ const BitcoinIcon = () => (
 );
 
 export default function SwapWidget() {
+  const { balance, params, isLoading: loadingInfo } = useVaultInfo();
   const [activeTab, setActiveTab] = useState<"dca" | "settle">("dca");
   const [isSettingsOpen, setSettingsOpen] = useState(false);
 
@@ -56,6 +59,30 @@ export default function SwapWidget() {
     confirmations: 1,
     chainId: baseSepolia.id,
     query: { enabled: !!txHash },
+  });
+
+  const { address } = useAccount();
+  const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+  const { data } = useReadContracts({
+    contracts: [
+      {
+        address: VAULT_CONTRACT_ADDRESS,
+        abi: VAULT_ABI,
+        functionName: "vaultBalanceOf",
+        args: [address ?? ZERO_ADDRESS],
+      },
+      {
+        address: VAULT_CONTRACT_ADDRESS,
+        abi: VAULT_ABI,
+        functionName: "dcaParamsOf",
+        args: [address ?? ZERO_ADDRESS],
+      },
+    ],
+    query: {
+      enabled: !!address,
+      refetchInterval: 12_000, // 12 s polling
+    },
   });
 
   // Handle transaction success/error with useEffect
@@ -195,7 +222,12 @@ export default function SwapWidget() {
                     unit={unit}
                     setUnit={setUnit}
                   />
-                  <Receive amount={amount} duration={duration} unit={unit} />
+                  <Receive
+                    amount={amount}
+                    duration={duration}
+                    unit={unit}
+                    params={params}
+                  />
                 </div>
               </>
             )}

@@ -1,35 +1,56 @@
 // app/components/Receive.tsx
+"use client";
+
 import Image from "next/image";
 import { useMemo } from "react";
-import { differenceInHours, addDays } from "date-fns";
+import { add, formatDistanceToNowStrict, formatDistanceStrict } from "date-fns";
 
-export default function Receive({
-  amount,
-  duration,
-  unit,
-}: {
-  amount: string;
-  duration: number | string;
+type Props = {
+  amount: string; // ETH entered by user
+  duration: number | string; // input in Action panel
   unit: "Days" | "Weeks" | "Months";
-}) {
-  // very rough estimate at 1 WBTC ≈ 23 ETH
+  params?: {
+    startTime: bigint; // on-chain, seconds
+    deltaTime: bigint; // seconds between slices
+  };
+};
+
+/**
+ * Displays the estimated WBTC received per slice and
+ * a human-readable “next swap” timer.
+ */
+export default function Receive({ amount, duration, unit, params }: Props) {
+  /* rough 1 WBTC ≈ 23 ETH for preview only */
   const wbtcEst = useMemo(() => Number(amount || 0) / 23, [amount]);
-  const nextSwap = useMemo(() => {
+
+  /* Fallback: based purely on UI cadence (before on-chain params exist) */
+  const uiNextSlice = useMemo(() => {
     const mul = unit === "Weeks" ? 7 : unit === "Months" ? 30 : 1;
-    return differenceInHours(addDays(new Date(), 1 * mul), new Date());
-  }, [duration, unit]);
+    const next = add(new Date(), { days: mul });
+    return formatDistanceToNowStrict(next, { unit: "hour" }); // e.g. "in 23 h"
+  }, [unit]);
+
+  /* On-chain timer: (startTime + deltaTime) – now */
+  const chainNextSlice = useMemo(() => {
+    if (!params) return null;
+    const targetMs = Number(params.startTime + params.deltaTime) * 1000;
+    return formatDistanceStrict(new Date(targetMs), new Date(), {
+      unit: "hour",
+    });
+  }, [params]);
 
   return (
-    <div className="rounded-xl bg-gray-900 p-4 border border-transparent">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="text-sm font-medium text-gray-400">
-          You receive (on Base)
-        </div>
-      </div>
-      <div className="mt-4 flex items-center justify-between">
-        <div className="w-full text-4xl font-bold text-gray-500">0.0145</div>
+    <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
+      <p className="mb-4 text-sm font-medium text-gray-400">
+        You receive (on&nbsp;Base)
+      </p>
+
+      <div className="flex items-center justify-between">
+        <span className="text-4xl font-bold text-gray-300">
+          {wbtcEst.toFixed(5)}
+        </span>
+
         <div className="flex items-center gap-2 rounded-full p-2 text-lg font-medium text-white">
-          +
           <Image
             src="/btc_logo.png"
             alt="WBTC logo"
@@ -40,9 +61,11 @@ export default function Receive({
           <span>WBTC</span>
         </div>
       </div>
-      <div className="text-sm text-gray-400 mt-8">
-        Next swap in ≈ {nextSwap} h • est. +{wbtcEst.toFixed(5)} WBTC
-      </div>
+
+      <p className="mt-6 text-sm text-gray-400">
+        Next swap&nbsp;
+        {chainNextSlice ?? uiNextSlice}
+      </p>
     </div>
   );
 }
