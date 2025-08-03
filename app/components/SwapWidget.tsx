@@ -1,7 +1,7 @@
 // app/components/SwapWidget.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { IoMdSettings } from "react-icons/io";
 import {
@@ -105,6 +105,55 @@ export default function SwapWidget() {
   });
 
   /* ----------------------------------------------------------------
+   *               Helper function to create DCA order
+   * ---------------------------------------------------------------- */
+  const createDCAOrder = useCallback(async () => {
+    try {
+      toast.loading("Creating DCA order…", { id: "createOrder" });
+
+      // Calculate DCA parameters from user input
+      const totalAmountWei = parseEther(amount);
+      const sliceCount = BigInt(10); // Split into 10 slices
+      const sliceSize = totalAmountWei / sliceCount;
+
+      // Convert duration to seconds
+      const durationNum = Number(duration);
+      const multiplier = unit === "Weeks" ? 7 : unit === "Months" ? 30 : 1;
+      const totalDays = durationNum * multiplier;
+      const deltaTimeSeconds = BigInt(
+        Math.floor((totalDays * 24 * 60 * 60) / Number(sliceCount))
+      );
+
+      // Start in 1 minute
+      const startTime = BigInt(Math.floor(Date.now() / 1000) + 60);
+
+      const orderHash = await createOrder(
+        sliceSize,
+        startTime,
+        deltaTimeSeconds,
+        totalAmountWei
+      );
+
+      toast.dismiss("createOrder");
+      toast.success(
+        <span>
+          DCA order <b>created</b> —&nbsp;
+          <a
+            href={`https://sepolia.basescan.org/tx/${orderHash}`}
+            target="_blank"
+            className="underline"
+          >
+            explorer
+          </a>
+        </span>
+      );
+    } catch (err: any) {
+      toast.dismiss("createOrder");
+      toast.error(`Failed to create DCA order: ${err.message}`);
+    }
+  }, [amount, duration, unit, createOrder]);
+
+  /* ----------------------------------------------------------------
    *               side-effects: toast notifications
    * ---------------------------------------------------------------- */
   useEffect(() => {
@@ -122,10 +171,14 @@ export default function SwapWidget() {
           </a>
         </span>
       );
+
+      // Step 2: Create DCA order after deposit confirms
+      createDCAOrder();
+
       setTxHash(undefined);
       setSentAt(null);
     }
-  }, [isSuccess, txHash]);
+  }, [isSuccess, txHash, createDCAOrder]);
 
   useEffect(() => {
     if (isError && error) {
@@ -137,38 +190,41 @@ export default function SwapWidget() {
   }, [isError, error]);
 
   /* ----------------------------------------------------------------
-   *               send “deposit()” transaction
+   *               send "deposit()" + "createOrder()" transactions
    * ---------------------------------------------------------------- */
-  const handleDepositAndDCA = () => {
+  const handleDepositAndDCA = async () => {
     toast.loading("Waiting for wallet …");
-    deposit(parseEther(amount))
-      .then((hash) => {
-        toast.dismiss();
-        toast(
-          <div className="flex items-center gap-2">
-            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" />
-            </svg>
-            Mining&nbsp;(
-            {formatDistance(new Date(), new Date(), { includeSeconds: true })})
-            —&nbsp;
-            <a
-              href={`https://sepolia.basescan.org/tx/${hash}`}
-              target="_blank"
-              className="underline"
-            >
-              explorer
-            </a>
-          </div>,
-          { id: "txSpinner", duration: Infinity }
-        );
-        setSentAt(new Date());
-        setTxHash(hash);
-      })
-      .catch((err) => {
-        toast.dismiss();
-        toast.error(err.message);
-      });
+
+    try {
+      // Step 1: Deposit ETH to vault
+      const depositHash = await deposit(parseEther(amount));
+
+      toast.dismiss();
+      toast(
+        <div className="flex items-center gap-2">
+          <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" />
+          </svg>
+          Depositing ETH…&nbsp;
+          <a
+            href={`https://sepolia.basescan.org/tx/${depositHash}`}
+            target="_blank"
+            className="underline"
+          >
+            explorer
+          </a>
+        </div>,
+        { id: "txSpinner", duration: Infinity }
+      );
+      setSentAt(new Date());
+      setTxHash(depositHash);
+
+      // Note: DCA order creation will happen after deposit confirms
+      // This is handled by the useEffect for transaction success
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error(err.message);
+    }
   };
 
   /* ---------------------------------------------------------------- */
@@ -180,45 +236,58 @@ export default function SwapWidget() {
 
   return (
     <>
-      <div className="w-full max-w-md">
-        {/* tabs */}
-        <div className="flex">
-          {(["dca", "settle"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setActiveTab(t)}
-              className={`w-full rounded-t-lg py-2.5 text-center font-semibold transition-colors ${
-                activeTab === t
-                  ? "bg-gray-900/50 text-white"
-                  : "bg-transparent text-gray-400 hover:bg-gray-800/50"
-              }`}
-            >
-              {t === "dca" ? "DCA" : "Settle"}
-            </button>
-          ))}
-        </div>
+      <div className="w-full max-w-md mx-auto">
+        {/* Modern Card with Better Spacing */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
+          {/* Tabs */}
+          <div className="flex border-b border-white/10">
+            {(["dca", "settle"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setActiveTab(t)}
+                className={`flex-1 py-4 text-center font-semibold transition-all duration-200 ${
+                  activeTab === t
+                    ? "bg-blue-500/20 text-blue-400 border-b-2 border-blue-400"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                {t === "dca" ? "DCA" : "Settle"}
+              </button>
+            ))}
+          </div>
 
-        {/* widget body */}
-        <div
-          className="flex h-[480px] flex-col rounded-b-2xl rounded-tr-2xl
-                        border border-gray-800 bg-gray-900/50 p-4 backdrop-blur-md"
-        >
-          <div className="flex-grow">
+          {/* Widget Body */}
+          <div className="p-6">
             {activeTab === "dca" ? (
-              <>
-                {/* header row */}
-                <div className="mb-4 flex items-center justify-between px-2">
-                  <h2 className="text-xl font-bold text-white">Setup DCA</h2>
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-white">Setup DCA</h2>
                   <button
                     onClick={() => setSettingsOpen(true)}
-                    className="text-gray-400 hover:text-white"
+                    className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                   >
                     <IoMdSettings className="h-5 w-5" />
                   </button>
                 </div>
 
-                {/* action panels */}
-                <div className="space-y-2">
+                {/* Vault Balance - Moved to top for better visibility */}
+                {balanceEth !== undefined && (
+                  <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-xl p-4 border border-green-500/20">
+                    <div className="text-sm text-gray-400 mb-1">
+                      Current Balance
+                    </div>
+                    <div className="text-xl font-bold text-white">
+                      {balanceEth.toFixed(4)} ETH
+                      <span className="text-sm text-gray-400 ml-2">
+                        in Vault
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Panels */}
+                <div className="space-y-4">
                   <Action
                     amount={amount}
                     setAmount={setAmount}
@@ -232,51 +301,53 @@ export default function SwapWidget() {
                     amount={amount}
                     duration={duration}
                     unit={unit}
-                    params={params as any} // safe – undefined → Receive falls back
+                    params={params as any}
                   />
                 </div>
-              </>
+
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                  {!isConnected ? (
+                    <div className="w-full">
+                      <ConnectButton />
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleDepositAndDCA}
+                      disabled={!amount || isMining || !!txHash}
+                      className={`w-full rounded-xl py-4 text-lg font-semibold transition-all duration-200 ${
+                        isMining
+                          ? "bg-gray-600 text-gray-300 cursor-not-allowed"
+                          : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg hover:shadow-blue-500/25"
+                      }`}
+                    >
+                      {isMining ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
+                          Depositing…
+                        </span>
+                      ) : (
+                        `Deposit ${amount || "0"} ETH`
+                      )}
+                    </button>
+                  )}
+
+                  {/* Cancel Button - Better integrated */}
+                  {activeTab === "dca" && <CancelButton />}
+                </div>
+              </div>
             ) : (
-              /* settle tab (still stub) */
-              <div className="mt-4 text-center text-gray-400">
-                Settle tab coming soon…
+              <div className="py-12 text-center">
+                <div className="text-gray-400 text-lg">
+                  Settle tab coming soon…
+                </div>
+                <div className="text-gray-500 text-sm mt-2">
+                  Advanced settlement features
+                </div>
               </div>
             )}
           </div>
-
-          {/* bottom CTA */}
-          <div className="mt-4">
-            {!isConnected ? (
-              <div className="w-full rounded-xl bg-blue-600 py-4 text-center text-xl font-semibold text-white hover:bg-blue-700">
-                <ConnectButton />
-              </div>
-            ) : (
-              <button
-                onClick={handleDepositAndDCA}
-                disabled={!amount || isMining || !!txHash}
-                className={`w-full rounded-xl py-4 text-xl font-semibold text-white
-                  ${
-                    isMining
-                      ? "bg-gray-600 animate-pulse"
-                      : "bg-blue-600 hover:bg-blue-700"
-                  }
-                  disabled:cursor-not-allowed`}
-              >
-                {isMining ? "Depositing…" : `Deposit ${amount || "0"} ETH`}
-              </button>
-            )}
-          </div>
-
-          {/* cancel/withdraw controls - only show on DCA tab */}
-          {activeTab === "dca" && <CancelButton />}
         </div>
-
-        {/* tiny balance readout – optional */}
-        {balanceEth !== undefined && (
-          <p className="mt-2 text-center text-sm text-gray-400">
-            In Vault: {balanceEth.toFixed(4)} ETH
-          </p>
-        )}
       </div>
 
       <SettingsModal

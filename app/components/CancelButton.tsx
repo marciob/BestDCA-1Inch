@@ -73,25 +73,62 @@ export default function CancelButton() {
   }
 
   return (
-    <div className="mt-6 flex flex-col gap-3">
+    <div className="space-y-3">
       {step === "withdraw" ? (
         <button
           onClick={handleWithdraw}
-          className="w-full rounded-xl bg-green-600 py-3 text-lg font-semibold text-white hover:bg-green-700"
+          className="w-full rounded-xl py-4 text-lg font-semibold bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-green-500/25 transition-all duration-200"
         >
-          Withdraw Funds
+          <span className="flex items-center justify-center gap-2">
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+              />
+            </svg>
+            Withdraw Funds
+          </span>
         </button>
       ) : (
         <button
           disabled={step === "cancelling"}
           onClick={handleCancel}
-          className={`w-full rounded-xl py-3 text-lg font-semibold text-white ${
+          className={`w-full rounded-xl py-4 text-lg font-semibold transition-all duration-200 ${
             step === "cancelling"
-              ? "bg-gray-600 animate-pulse"
-              : "bg-red-600 hover:bg-red-700"
+              ? "bg-gray-600 text-gray-300 cursor-not-allowed"
+              : "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg hover:shadow-red-500/25"
           }`}
         >
-          {step === "cancelling" ? "Cancelling…" : "Cancel DCA"}
+          {step === "cancelling" ? (
+            <span className="flex items-center justify-center gap-2">
+              <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
+              Cancelling…
+            </span>
+          ) : (
+            <span className="flex items-center justify-center gap-2">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+              Cancel DCA
+            </span>
+          )}
         </button>
       )}
     </div>

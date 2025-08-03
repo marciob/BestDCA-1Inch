@@ -49,94 +49,94 @@ export default function Action({
   );
 
   return (
-    <div className="rounded-xl bg-gray-800 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <button className="flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-white">
-          <span>DCA</span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="m6 9 6 6 6-6" />
+    <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2 text-gray-300">
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+              clipRule="evenodd"
+            />
           </svg>
-        </button>
+          <span className="text-sm font-medium">DCA Setup</span>
+        </div>
         <ChainSelector chainName="Base" chainLogo="/base_logo.png" />
       </div>
-      <div className="mt-4 flex items-center justify-between">
-        <input
-          type="text"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className="w-full bg-transparent text-4xl font-bold text-white placeholder-gray-500 focus:outline-none"
-          placeholder="0.05"
-        />
-        {/* Statically show ETH */}
-        <div className="flex items-center gap-2 rounded-full bg-black/30 p-2 text-lg font-medium text-white">
-          <Image src="/eth_logo.png" alt="ETH logo" width={24} height={24} />
-          <span>ETH</span>
+
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-400 mb-3">
+          Amount to DCA
+        </label>
+        <div className="flex items-center justify-between bg-white/5 rounded-xl p-4 border border-white/10">
+          <input
+            type="text"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="flex-1 bg-transparent text-3xl font-bold text-white placeholder-gray-500 focus:outline-none"
+            placeholder="0.001"
+          />
+          <div className="flex items-center gap-2 bg-white/10 rounded-full px-3 py-2 text-white font-medium">
+            <Image src="/eth_logo.png" alt="ETH logo" width={20} height={20} />
+            <span>ETH</span>
+          </div>
         </div>
       </div>
 
-      <div className="mt-4 border-t border-gray-700 pt-4">
-        <label className="block text-sm font-medium text-gray-400 mb-2">
-          Over a period of
+      <div>
+        <label className="block text-sm font-medium text-gray-400 mb-3">
+          Duration
         </label>
-        <div className="flex items-center justify-between rounded-lg bg-gray-900 p-1">
-          <div className="flex flex-grow items-center">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center bg-white/5 rounded-xl border border-white/10 overflow-hidden">
             <button
               type="button"
               onClick={handleDecrement}
-              className="px-3 py-2 text-gray-400 hover:text-white"
+              className="p-3 text-white hover:bg-white/10 transition-colors"
             >
               <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                viewBox="0 0 24 24"
               >
-                <path d="M5 12h14" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M20 12H4"
+                />
               </svg>
             </button>
             <input
               type="number"
               value={duration}
               onChange={handleDurationChange}
-              className="w-full bg-transparent text-center text-lg font-medium text-white focus:outline-none"
+              className="w-16 bg-transparent py-3 text-center text-white focus:outline-none"
+              min="1"
             />
             <button
               type="button"
               onClick={handleIncrement}
-              className="px-3 py-2 text-gray-400 hover:text-white"
+              className="p-3 text-white hover:bg-white/10 transition-colors"
             >
               <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                viewBox="0 0 24 24"
               >
-                <path d="M5 12h14" />
-                <path d="M12 5v14" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
               </svg>
             </button>
           </div>
-          <div className="flex shrink-0 rounded-md bg-gray-800 p-0.5">
+
+          <div className="flex bg-white/5 rounded-xl p-1 border border-white/10">
             <UnitButton value="Days" />
             <UnitButton value="Weeks" />
             <UnitButton value="Months" />
