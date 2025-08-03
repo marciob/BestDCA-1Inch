@@ -7,6 +7,7 @@ import { useVaultActions } from "@/app/hooks/useVaultActions";
 import { useVaultInfo } from "@/app/hooks/useVaultInfo";
 import { useWaitForTransactionReceipt } from "wagmi";
 import { baseSepolia } from "viem/chains";
+import { useHtlc } from "@/app/hooks/useHtlc";
 
 export default function CancelButton() {
   const { currentHash, hasActiveOrder } = useVaultInfo();
@@ -14,6 +15,7 @@ export default function CancelButton() {
 
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
   const [step, setStep] = useState<"idle" | "cancelling" | "withdraw">("idle");
+  const { locked, refundTime, canClaim } = useHtlc();
 
   // wait for the cancel-tx confirmation
   const {
@@ -77,6 +79,7 @@ export default function CancelButton() {
       {step === "withdraw" ? (
         <button
           onClick={handleWithdraw}
+          disabled={!canClaim}
           className="w-full rounded-xl py-4 text-lg font-semibold bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-green-500/25 transition-all duration-200"
         >
           <span className="flex items-center justify-center gap-2">
@@ -93,7 +96,11 @@ export default function CancelButton() {
                 d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
               />
             </svg>
-            Withdraw Funds
+            {locked && !canClaim
+              ? `Withdraw disabled – HTLC live until ${new Date(
+                  refundTime * 1000
+                ).toLocaleString()}`
+              : "Withdraw Funds"}
           </span>
         </button>
       ) : (

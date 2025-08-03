@@ -41,7 +41,7 @@ export default function Action({
       className={`rounded-md px-4 py-1.5 text-sm font-semibold transition-colors ${
         unit === value
           ? "bg-gray-600 text-white"
-          : "bg-transparent text-gray-400 hover:bg-gray-700/50"
+          : "bg-transparent text-gray-400  hover:bg-gray-700/50"
       }`}
     >
       {value}
@@ -87,23 +87,24 @@ export default function Action({
         <label className="block text-sm font-medium text-gray-400 mb-3">
           Duration
         </label>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-white/5 rounded-xl border border-white/10">
             <button
               type="button"
               onClick={handleDecrement}
-              className="p-3 text-white hover:bg-white/10 transition-colors"
+              className="px-2 py-3 text-white hover:bg-white/10 transition-colors flex items-center justify-center"
+              title="Decrease duration"
             >
               <svg
                 className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                strokeWidth={3}
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
                   d="M20 12H4"
                 />
               </svg>
@@ -112,31 +113,33 @@ export default function Action({
               type="number"
               value={duration}
               onChange={handleDurationChange}
-              className="w-16 bg-transparent py-3 text-center text-white focus:outline-none"
+              className="w-10 bg-transparent py-3 text-center text-white focus:outline-none font-medium"
               min="1"
+              max="365"
             />
             <button
               type="button"
               onClick={handleIncrement}
-              className="p-3 text-white hover:bg-white/10 transition-colors"
+              className="px-2 py-3 text-white hover:bg-white/10 transition-colors flex items-center justify-center"
+              title="Increase duration"
             >
               <svg
                 className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                strokeWidth={3}
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
+                  d="M12 6v12m6-6H6"
                 />
               </svg>
             </button>
           </div>
 
-          <div className="flex bg-white/5 rounded-xl p-1 border border-white/10">
+          <div className="flex bg-white/5 rounded-xl p-1 border border-white/10 flex-1 min-w-0">
             <UnitButton value="Days" />
             <UnitButton value="Weeks" />
             <UnitButton value="Months" />
