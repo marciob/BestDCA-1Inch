@@ -1,33 +1,54 @@
 // app/hooks/useFills.ts
+"use client";
+
 import useSWR from "swr";
-import { formatDistanceToNow } from "date-fns";
 
-const chainId = process.env.NEXT_PUBLIC_CHAIN_ID;
-const maker = process.env.NEXT_PUBLIC_VAULT;
-const key = process.env.NEXT_PUBLIC_ONEINCH_KEY;
+type FillRow = {
+  id: string;
+  amount: string;
+  chain: string;
+  time: string;
+  rowKey: string;
+};
 
-const fetcher = (url: string) =>
-  fetch(url, { headers: { Authorization: `Bearer ${key}` } }).then((r) =>
-    r.json()
-  );
+type Realised = {
+  ethSpent: number;
+  wbtcRecv: number;
+};
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export function useFills() {
-  const { data, error } = useSWR(
-    `https://api.1inch.dev/history/v1.1/${chainId}/orders/by_maker/${maker}?statuses=3`,
-    fetcher,
-    { refreshInterval: 20_000 } // 20 s
+  const { data, error } = useSWR<FillRow[]>("/api/fill", fetcher, {
+    refreshInterval: 8_000,
+  });
+
+  if (error)
+    return {
+      fills: [],
+      isLoading: false,
+      realised: { ethSpent: 0, wbtcRecv: 0 },
+    };
+  if (!data)
+    return {
+      fills: [],
+      isLoading: true,
+      realised: { ethSpent: 0, wbtcRecv: 0 },
+    };
+
+  const fills = data.map((f, idx) => ({
+    ...f,
+    time: new Date(f.time).toLocaleTimeString(),
+    rowKey: `${f.id}-${idx}`,
+  }));
+
+  const realised = fills.reduce<Realised>(
+    (acc, f) => ({
+      ethSpent: acc.ethSpent + Number(f.amount),
+      wbtcRecv: acc.wbtcRecv + Number(f.amount) / 23,
+    }),
+    { ethSpent: 0, wbtcRecv: 0 }
   );
 
-  if (error) return { fills: [], isLoading: false };
-  if (!data) return { fills: [], isLoading: true };
-
-  return {
-    fills: data.map((f: any) => ({
-      id: f.orderHash,
-      amount: `${Number(f.makingAmount) / 10 ** 18} WBTC`,
-      chain: f.chainId === 84532 ? "Base" : f.chainId,
-      time: formatDistanceToNow(new Date(f.filledAt), { addSuffix: true }),
-    })),
-    isLoading: false,
-  };
+  return { fills, isLoading: false, realised };
 }

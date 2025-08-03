@@ -6,7 +6,6 @@ import Image from "next/image";
 import { IoMdSettings } from "react-icons/io";
 import {
   useAccount,
-  useWriteContract,
   useWaitForTransactionReceipt,
   useReadContract,
 } from "wagmi";
@@ -22,6 +21,7 @@ import Receive from "./Receive";
 import ChainSelector from "./ChainSelector";
 import { useHasMounted } from "@/app/hooks/useHasMounted";
 import { VAULT_ABI, VAULT_CONTRACT_ADDRESS } from "@/lib/constants";
+import { useVaultActions } from "@/app/hooks/useVaultActions";
 
 /* ------------------------------------------------------------------ */
 /*                tiny util + static asset helper                     */
@@ -53,7 +53,9 @@ export default function SwapWidget() {
 
   /* ─── wallet + tx helpers ──────────────────────────────────────── */
   const { address, isConnected } = useAccount();
-  const { writeContract } = useWriteContract();
+  const { deposit, createOrder /*, cancelOrder, withdraw*/ } =
+    useVaultActions();
+
   const mounted = useHasMounted();
 
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
@@ -139,49 +141,34 @@ export default function SwapWidget() {
    * ---------------------------------------------------------------- */
   const handleDepositAndDCA = () => {
     toast.loading("Waiting for wallet …");
-    writeContract(
-      {
-        address: VAULT_CONTRACT_ADDRESS,
-        abi: VAULT_ABI,
-        functionName: "deposit",
-        value: parseEther(amount),
-      },
-      {
-        onSuccess(hash) {
-          toast.dismiss();
-          toast(
-            <div className="flex items-center gap-2">
-              <svg
-                className="h-4 w-4 animate-spin"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="12" cy="12" r="10" />
-              </svg>
-              Mining&nbsp;(
-              {formatDistance(new Date(), new Date(), { includeSeconds: true })}
-              ) —&nbsp;
-              <a
-                href={`https://sepolia.basescan.org/tx/${hash}`}
-                target="_blank"
-                className="underline"
-              >
-                explorer
-              </a>
-            </div>,
-            { id: "txSpinner", duration: Infinity }
-          );
-          setSentAt(new Date());
-          setTxHash(hash);
-        },
-        onError(err) {
-          toast.dismiss();
-          toast.error(err.message);
-        },
-      }
-    );
+    deposit(parseEther(amount))
+      .then((hash) => {
+        toast.dismiss();
+        toast(
+          <div className="flex items-center gap-2">
+            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" />
+            </svg>
+            Mining&nbsp;(
+            {formatDistance(new Date(), new Date(), { includeSeconds: true })})
+            —&nbsp;
+            <a
+              href={`https://sepolia.basescan.org/tx/${hash}`}
+              target="_blank"
+              className="underline"
+            >
+              explorer
+            </a>
+          </div>,
+          { id: "txSpinner", duration: Infinity }
+        );
+        setSentAt(new Date());
+        setTxHash(hash);
+      })
+      .catch((err) => {
+        toast.dismiss();
+        toast.error(err.message);
+      });
   };
 
   /* ---------------------------------------------------------------- */

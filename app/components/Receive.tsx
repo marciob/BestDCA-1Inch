@@ -4,6 +4,7 @@
 import Image from "next/image";
 import { useMemo } from "react";
 import { add, formatDistanceToNowStrict, formatDistanceStrict } from "date-fns";
+import { usePrices } from "@/app/hooks/usePrices";
 
 type Props = {
   amount: string; // ETH entered by user
@@ -20,8 +21,13 @@ type Props = {
  * a human-readable “next swap” timer.
  */
 export default function Receive({ amount, duration, unit, params }: Props) {
-  /* rough 1 WBTC ≈ 23 ETH for preview only */
-  const wbtcEst = useMemo(() => Number(amount || 0) / 23, [amount]);
+  const { ethUsd, wbtcUsd, isLoading } = usePrices();
+
+  const wbtcEst = useMemo(() => {
+    const eth = Number(amount || 0);
+    if (!ethUsd || !wbtcUsd) return 0;
+    return (eth * ethUsd) / wbtcUsd; // ETH→USD / WBTC→USD
+  }, [amount, ethUsd, wbtcUsd]);
 
   /* Fallback: based purely on UI cadence (before on-chain params exist) */
   const uiNextSlice = useMemo(() => {
@@ -47,7 +53,7 @@ export default function Receive({ amount, duration, unit, params }: Props) {
 
       <div className="flex items-center justify-between">
         <span className="text-4xl font-bold text-gray-300">
-          {wbtcEst.toFixed(5)}
+          {isLoading ? "…" : wbtcEst.toFixed(5)}
         </span>
 
         <div className="flex items-center gap-2 rounded-full p-2 text-lg font-medium text-white">
