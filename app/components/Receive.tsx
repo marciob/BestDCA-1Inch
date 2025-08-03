@@ -13,7 +13,7 @@ export default function Receive() {
       <div className="mt-4 flex items-center justify-between">
         <div className="w-full text-4xl font-bold text-gray-500">0.0145</div>
         <div className="flex items-center gap-2 rounded-full p-2 text-lg font-medium text-white">
-          <Image src="/wbtc_logo.png" alt="WBTC logo" width={24} height={24} />
+          <Image src="/btc_logo.png" alt="WBTC logo" width={24} height={24} />
           <span>WBTC</span>
         </div>
       </div>

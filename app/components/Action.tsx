@@ -1,16 +1,39 @@
-// app/components/Action.tsx
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react"; // Import React for the types
 import ChainSelector from "./ChainSelector";
 import TokenSelector from "./TokenSelector";
 
-export default function Action() {
-  const [duration, setDuration] = useState<number | string>(30);
-  const [unit, setUnit] = useState<"Days" | "Weeks" | "Months">("Days");
+// --- UPDATED PROP TYPES ---
+type ActionProps = {
+  amount: string;
+  setAmount: (value: string) => void;
+  duration: number | string;
+  // Use the correct React type for a state setter function
+  setDuration: React.Dispatch<React.SetStateAction<number | string>>;
+  unit: "Days" | "Weeks" | "Months";
+  setUnit: (value: "Days" | "Weeks" | "Months") => void;
+};
 
+export default function Action({
+  amount,
+  setAmount,
+  duration,
+  setDuration,
+  unit,
+  setUnit,
+}: ActionProps) {
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDuration(e.target.value);
+    setDuration(e.target.value === "" ? "" : parseInt(e.target.value, 10));
+  };
+
+  // This code will now work correctly
+  const handleDecrement = () => {
+    setDuration((prev) => (Number(prev) > 1 ? Number(prev) - 1 : 1));
+  };
+
+  const handleIncrement = () => {
+    setDuration((prev) => Number(prev) + 1);
   };
 
   const UnitButton = ({ value }: { value: "Days" | "Weeks" | "Months" }) => (
@@ -46,13 +69,13 @@ export default function Action() {
             <path d="m6 9 6 6 6-6" />
           </svg>
         </button>
-
-        {/* --- UPDATED CHAIN --- */}
         <ChainSelector chainName="Base" chainLogo="/base_logo.png" />
       </div>
       <div className="mt-4 flex items-center justify-between">
         <input
           type="text"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
           className="w-full bg-transparent text-4xl font-bold text-white placeholder-gray-500 focus:outline-none"
           placeholder="1,000"
         />
@@ -63,13 +86,54 @@ export default function Action() {
         <label className="block text-sm font-medium text-gray-400 mb-2">
           Over a period of
         </label>
-        <div className="flex items-center rounded-lg bg-gray-900 p-1">
-          <input
-            type="number"
-            value={duration}
-            onChange={handleDurationChange}
-            className="w-full bg-transparent p-2 text-lg font-medium text-white placeholder-gray-500 focus:outline-none"
-          />
+        <div className="flex items-center justify-between rounded-lg bg-gray-900 p-1">
+          <div className="flex flex-grow items-center">
+            <button
+              type="button"
+              onClick={handleDecrement}
+              className="px-3 py-2 text-gray-400 hover:text-white"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12h14" />
+              </svg>
+            </button>
+            <input
+              type="number"
+              value={duration}
+              onChange={handleDurationChange}
+              className="w-full bg-transparent text-center text-lg font-medium text-white focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={handleIncrement}
+              className="px-3 py-2 text-gray-400 hover:text-white"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12h14" />
+                <path d="M12 5v14" />
+              </svg>
+            </button>
+          </div>
           <div className="flex shrink-0 rounded-md bg-gray-800 p-0.5">
             <UnitButton value="Days" />
             <UnitButton value="Weeks" />

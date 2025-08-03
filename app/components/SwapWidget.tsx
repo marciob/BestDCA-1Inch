@@ -1,13 +1,17 @@
-// app/components/SwapWidget.tsx
 "use client";
 
 import { useState } from "react";
 import Image from "next/image";
 import { IoMdSettings } from "react-icons/io";
+import { useAccount, useWriteContract } from "wagmi";
+import { parseUnits } from "viem";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+
 import SettingsModal from "./SettingsModal";
 import Action from "./Action";
 import Receive from "./Receive";
 import ChainSelector from "./ChainSelector";
+import { VAULT_ABI, VAULT_CONTRACT_ADDRESS } from "../../constants";
 
 const BitcoinIcon = () => (
   <Image
@@ -23,12 +27,42 @@ export default function SwapWidget() {
   const [activeTab, setActiveTab] = useState<"dca" | "settle">("dca");
   const [isSettingsOpen, setSettingsOpen] = useState(false);
 
-  const ctaText =
-    activeTab === "dca" ? "Connect Wallet" : "Get Settlement Quote";
-  const ctaColor =
-    activeTab === "dca"
-      ? "bg-blue-600 hover:bg-blue-700"
-      : "bg-purple-600 hover:bg-purple-700";
+  // State for the DCA form, managed here
+  const [amount, setAmount] = useState("");
+  const [duration, setDuration] = useState<number | string>(30);
+  const [unit, setUnit] = useState<"Days" | "Weeks" | "Months">("Days");
+
+  const { isConnected } = useAccount();
+  const { writeContract, isPending } = useWriteContract();
+
+  const handleStartDCA = () => {
+    // This is where you will call your Orchestrator in the future to get a real hash.
+    // For now, we use a placeholder hash to test the contract call.
+    const placeholderOrderHash =
+      "0x0000000000000000000000000000000000000000000000000000000000000001";
+
+    // Convert duration to seconds
+    let durationInSeconds = Number(duration) * 24 * 60 * 60; // Days
+    if (unit === "Weeks") durationInSeconds *= 7;
+    if (unit === "Months") durationInSeconds *= 30; // Approximation
+
+    // This is a placeholder for your logic to calculate slice size based on total amount and duration
+    const sliceSize = parseUnits("10", 6); // Placeholder: 10 USDC (6 decimals)
+    const deltaTime = 15 * 60; // 15 minutes
+
+    // Call the smart contract
+    writeContract({
+      address: VAULT_CONTRACT_ADDRESS,
+      abi: VAULT_ABI,
+      functionName: "startDCA",
+      args: [
+        placeholderOrderHash,
+        BigInt(durationInSeconds),
+        sliceSize,
+        BigInt(deltaTime),
+      ],
+    });
+  };
 
   const TabButton = ({
     tabName,
@@ -71,7 +105,14 @@ export default function SwapWidget() {
                   </button>
                 </div>
                 <div className="space-y-2">
-                  <Action />
+                  <Action
+                    amount={amount}
+                    setAmount={setAmount}
+                    duration={duration}
+                    setDuration={setDuration}
+                    unit={unit}
+                    setUnit={setUnit}
+                  />
                   <Receive />
                 </div>
               </>
@@ -85,7 +126,6 @@ export default function SwapWidget() {
                 </div>
                 <div className="space-y-2">
                   <div className="rounded-xl bg-gray-800 p-4">
-                    {/* --- UPDATED CHAIN --- */}
                     <div className="text-sm font-medium text-gray-400">
                       From Base
                     </div>
@@ -93,7 +133,6 @@ export default function SwapWidget() {
                       0.0145 WBTC
                     </div>
                   </div>
-
                   <div className="rounded-xl bg-gray-800 p-4">
                     <label className="block text-sm font-medium text-gray-400 mb-2">
                       To Prize Chain
@@ -118,11 +157,37 @@ export default function SwapWidget() {
           </div>
 
           <div className="mt-4">
-            <button
-              className={`w-full rounded-xl py-4 text-xl font-semibold text-white transition-colors ${ctaColor}`}
-            >
-              {ctaText}
-            </button>
+            {!isConnected ? (
+              <div className="w-full rounded-xl bg-blue-600 py-4 text-xl font-semibold text-white text-center hover:bg-blue-700">
+                <ConnectButton.Custom>
+                  {({ openConnectModal, mounted }) => (
+                    <button
+                      onClick={openConnectModal}
+                      disabled={!mounted}
+                      className="w-full"
+                    >
+                      Connect Wallet
+                    </button>
+                  )}
+                </ConnectButton.Custom>
+              </div>
+            ) : (
+              <button
+                onClick={activeTab === "dca" ? handleStartDCA : () => {}}
+                disabled={isPending}
+                className={`w-full rounded-xl py-4 text-xl font-semibold text-white transition-colors ${
+                  activeTab === "dca"
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-purple-600 hover:bg-purple-700"
+                } disabled:bg-gray-600 disabled:cursor-not-allowed`}
+              >
+                {isPending
+                  ? "Confirming..."
+                  : activeTab === "dca"
+                  ? "Start Accumulating"
+                  : "Get Settlement Quote"}
+              </button>
+            )}
           </div>
         </div>
       </div>
