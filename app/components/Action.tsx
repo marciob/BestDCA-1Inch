@@ -1,7 +1,33 @@
+// app/components/Action.tsx
+"use client"; // This component now needs to be a Client Component for state
+
+import { useState } from "react";
 import ChainSelector from "./ChainSelector";
 import TokenSelector from "./TokenSelector";
 
 export default function Action() {
+  // State to manage the duration number and the selected unit
+  const [duration, setDuration] = useState<number | string>(30);
+  const [unit, setUnit] = useState<"Days" | "Weeks" | "Months">("Days");
+
+  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDuration(e.target.value);
+  };
+
+  const UnitButton = ({ value }: { value: "Days" | "Weeks" | "Months" }) => (
+    <button
+      type="button"
+      onClick={() => setUnit(value)}
+      className={`rounded-md px-4 py-1.5 text-sm font-semibold transition-colors ${
+        unit === value
+          ? "bg-gray-600 text-white"
+          : "bg-transparent text-gray-400 hover:bg-gray-700/50"
+      }`}
+    >
+      {value}
+    </button>
+  );
+
   return (
     <div className="rounded-xl bg-gray-800 p-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -35,24 +61,22 @@ export default function Action() {
         <TokenSelector tokenName="USDC" tokenLogo="/usdc_logo.png" />
       </div>
 
-      {/* --- NEW DURATION SECTION --- */}
+      {/* --- IMPROVED DURATION SECTION --- */}
       <div className="mt-4 border-t border-gray-700 pt-4">
-        <div className="flex items-center justify-between">
-          <label
-            htmlFor="duration"
-            className="text-sm font-medium text-gray-400"
-          >
-            Over a period of
-          </label>
-          <div className="flex w-2/5 items-center gap-2">
-            <input
-              id="duration"
-              name="duration"
-              type="number"
-              placeholder="30"
-              className="w-full rounded-md bg-gray-900 text-right font-medium"
-            />
-            <span className="text-sm text-gray-400">Days</span>
+        <label className="block text-sm font-medium text-gray-400 mb-2">
+          Over a period of
+        </label>
+        <div className="flex items-center rounded-lg bg-gray-900 p-1">
+          <input
+            type="number"
+            value={duration}
+            onChange={handleDurationChange}
+            className="w-full bg-transparent p-2 text-lg font-medium text-white placeholder-gray-500 focus:outline-none"
+          />
+          <div className="flex shrink-0 rounded-md bg-gray-800 p-0.5">
+            <UnitButton value="Days" />
+            <UnitButton value="Weeks" />
+            <UnitButton value="Months" />
           </div>
         </div>
       </div>

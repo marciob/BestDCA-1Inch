@@ -1,8 +1,9 @@
+// app/components/SwapWidget.tsx
 "use client";
 
 import { useState } from "react";
 import Image from "next/image";
-import { IoMdSettings } from "react-icons/io"; // <-- 1. ADD THIS IMPORT
+import { IoMdSettings } from "react-icons/io";
 import SettingsModal from "./SettingsModal";
 import Action from "./Action";
 import Receive from "./Receive";

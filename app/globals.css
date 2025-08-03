@@ -11,4 +11,18 @@ body {
   input[type="text"] {
     @apply w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500;
   }
+
+  /* --- ADD THIS SECTION TO HIDE NUMBER INPUT ARROWS --- */
+
+  /* For WebKit-based browsers (Chrome, Safari, Edge) */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type-="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* For Firefox */
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
 }
