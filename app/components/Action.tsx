@@ -1,15 +1,14 @@
+//app/components/Action.tsx
 "use client";
 
-import React, { useState } from "react"; // Import React for the types
+import React from "react";
 import ChainSelector from "./ChainSelector";
-import TokenSelector from "./TokenSelector";
+import Image from "next/image"; // Make sure Image is imported
 
-// --- UPDATED PROP TYPES ---
 type ActionProps = {
   amount: string;
   setAmount: (value: string) => void;
   duration: number | string;
-  // Use the correct React type for a state setter function
   setDuration: React.Dispatch<React.SetStateAction<number | string>>;
   unit: "Days" | "Weeks" | "Months";
   setUnit: (value: "Days" | "Weeks" | "Months") => void;
@@ -27,7 +26,6 @@ export default function Action({
     setDuration(e.target.value === "" ? "" : parseInt(e.target.value, 10));
   };
 
-  // This code will now work correctly
   const handleDecrement = () => {
     setDuration((prev) => (Number(prev) > 1 ? Number(prev) - 1 : 1));
   };
@@ -77,9 +75,13 @@ export default function Action({
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           className="w-full bg-transparent text-4xl font-bold text-white placeholder-gray-500 focus:outline-none"
-          placeholder="1,000"
+          placeholder="0.05"
         />
-        <TokenSelector tokenName="USDC" tokenLogo="/usdc_logo.png" />
+        {/* Statically show ETH */}
+        <div className="flex items-center gap-2 rounded-full bg-black/30 p-2 text-lg font-medium text-white">
+          <Image src="/eth_logo.png" alt="ETH logo" width={24} height={24} />
+          <span>ETH</span>
+        </div>
       </div>
 
       <div className="mt-4 border-t border-gray-700 pt-4">

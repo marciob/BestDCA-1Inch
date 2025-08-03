@@ -1,3 +1,4 @@
+//app/components/SettingsModal.tsx
 type SettingsModalProps = {
   isOpen: boolean;
   onClose: () => void;

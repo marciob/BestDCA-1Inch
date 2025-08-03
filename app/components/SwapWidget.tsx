@@ -1,17 +1,23 @@
+//app/components/SwapWidget.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { IoMdSettings } from "react-icons/io";
-import { useAccount, useWriteContract } from "wagmi";
-import { parseUnits } from "viem";
+import {
+  useAccount,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+} from "wagmi";
+import { parseEther } from "viem";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-
 import SettingsModal from "./SettingsModal";
 import Action from "./Action";
 import Receive from "./Receive";
 import ChainSelector from "./ChainSelector";
-import { VAULT_ABI, VAULT_CONTRACT_ADDRESS } from "../../constants";
+import { VAULT_ABI, VAULT_CONTRACT_ADDRESS } from "@/lib/constants";
+import { useHasMounted } from "@/app/hooks/useHasMounted";
+import toast from "react-hot-toast";
 
 const BitcoinIcon = () => (
   <Image
@@ -27,41 +33,73 @@ export default function SwapWidget() {
   const [activeTab, setActiveTab] = useState<"dca" | "settle">("dca");
   const [isSettingsOpen, setSettingsOpen] = useState(false);
 
-  // State for the DCA form, managed here
-  const [amount, setAmount] = useState("");
-  const [duration, setDuration] = useState<number | string>(30);
+  const [amount, setAmount] = useState("0.01"); // Default to 0.01 ETH
+  const [duration, setDuration] = useState<number | string>(7); // Default to 7 days
   const [unit, setUnit] = useState<"Days" | "Weeks" | "Months">("Days");
 
   const { isConnected } = useAccount();
-  const { writeContract, isPending } = useWriteContract();
+  const { writeContract } = useWriteContract();
+  const mounted = useHasMounted();
 
-  const handleStartDCA = () => {
-    // This is where you will call your Orchestrator in the future to get a real hash.
-    // For now, we use a placeholder hash to test the contract call.
-    const placeholderOrderHash =
-      "0x0000000000000000000000000000000000000000000000000000000000000001";
+  const [txHash, setTxHash] = useState<`0x${string}` | undefined>(undefined);
 
-    // Convert duration to seconds
-    let durationInSeconds = Number(duration) * 24 * 60 * 60; // Days
-    if (unit === "Weeks") durationInSeconds *= 7;
-    if (unit === "Months") durationInSeconds *= 30; // Approximation
+  const {
+    isLoading: isMining,
+    isSuccess,
+    isError,
+    error,
+  } = useWaitForTransactionReceipt({
+    hash: txHash,
+    query: { enabled: !!txHash },
+  });
 
-    // This is a placeholder for your logic to calculate slice size based on total amount and duration
-    const sliceSize = parseUnits("10", 6); // Placeholder: 10 USDC (6 decimals)
-    const deltaTime = 15 * 60; // 15 minutes
+  // Handle transaction success/error with useEffect
+  useEffect(() => {
+    if (isSuccess && txHash) {
+      toast.success(
+        <span>
+          Deposit confirmed —
+          <a
+            href={`https://sepolia.basescan.org/tx/${txHash}`}
+            target="_blank"
+            className="underline"
+          >
+            view on explorer
+          </a>
+        </span>
+      );
+      setTxHash(undefined);
+    }
+  }, [isSuccess, txHash]);
 
-    // Call the smart contract
-    writeContract({
-      address: VAULT_CONTRACT_ADDRESS,
-      abi: VAULT_ABI,
-      functionName: "startDCA",
-      args: [
-        placeholderOrderHash,
-        BigInt(durationInSeconds),
-        sliceSize,
-        BigInt(deltaTime),
-      ],
-    });
+  useEffect(() => {
+    if (isError && error) {
+      toast.error(error.message);
+      setTxHash(undefined);
+    }
+  }, [isError, error]);
+
+  const handleDepositAndDCA = () => {
+    toast.loading("Waiting for wallet…");
+    writeContract(
+      {
+        address: VAULT_CONTRACT_ADDRESS,
+        abi: VAULT_ABI,
+        functionName: "deposit",
+        value: parseEther(amount),
+      },
+      {
+        onSuccess(hash) {
+          toast.dismiss(); // remove “waiting” toast
+          toast.loading("Transaction submitted, mining…");
+          setTxHash(hash);
+        },
+        onError(err: Error) {
+          toast.dismiss();
+          toast.error(err.message);
+        },
+      }
+    );
   };
 
   const TabButton = ({
@@ -82,6 +120,8 @@ export default function SwapWidget() {
       {label}
     </button>
   );
+
+  if (!mounted) return null;
 
   return (
     <>
@@ -113,7 +153,7 @@ export default function SwapWidget() {
                     unit={unit}
                     setUnit={setUnit}
                   />
-                  <Receive />
+                  <Receive amount={amount} duration={duration} unit={unit} />
                 </div>
               </>
             )}
@@ -173,19 +213,17 @@ export default function SwapWidget() {
               </div>
             ) : (
               <button
-                onClick={activeTab === "dca" ? handleStartDCA : () => {}}
-                disabled={isPending}
-                className={`w-full rounded-xl py-4 text-xl font-semibold text-white transition-colors ${
-                  activeTab === "dca"
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-purple-600 hover:bg-purple-700"
-                } disabled:bg-gray-600 disabled:cursor-not-allowed`}
+                onClick={handleDepositAndDCA}
+                disabled={!amount || isMining || !!txHash}
+                className={`w-full rounded-xl py-4 text-xl font-semibold text-white
+                  ${
+                    isMining
+                      ? "bg-gray-600 animate-pulse"
+                      : "bg-blue-600 hover:bg-blue-700"
+                  }
+                  disabled:cursor-not-allowed`}
               >
-                {isPending
-                  ? "Confirming..."
-                  : activeTab === "dca"
-                  ? "Start Accumulating"
-                  : "Get Settlement Quote"}
+                {isMining ? "Depositing…" : `Deposit ${amount || "0"} ETH`}
               </button>
             )}
           </div>
