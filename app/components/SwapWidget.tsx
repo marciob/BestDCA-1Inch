@@ -19,6 +19,7 @@ import SettingsModal from "./SettingsModal";
 import Action from "./Action";
 import Receive from "./Receive";
 import ChainSelector from "./ChainSelector";
+import CancelButton from "./CancelButton";
 import { useHasMounted } from "@/app/hooks/useHasMounted";
 import { VAULT_ABI, VAULT_CONTRACT_ADDRESS } from "@/lib/constants";
 import { useVaultActions } from "@/app/hooks/useVaultActions";
@@ -70,7 +71,6 @@ export default function SwapWidget() {
     hash: txHash,
     confirmations: 1,
     chainId: baseSepolia.id,
-    query: { enabled: !!txHash },
   });
 
   /* ─── live Vault reads (balance → currentOrder → params) ───────── */
@@ -266,6 +266,9 @@ export default function SwapWidget() {
               </button>
             )}
           </div>
+
+          {/* cancel/withdraw controls - only show on DCA tab */}
+          {activeTab === "dca" && <CancelButton />}
         </div>
 
         {/* tiny balance readout – optional */}

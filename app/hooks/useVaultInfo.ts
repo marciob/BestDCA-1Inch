@@ -41,25 +41,32 @@ export function useVaultInfo() {
     },
   });
 
-  // 3️⃣ Read dcaParamsOf(currentHash)
-  const shouldFetchParams =
+  // Determine if there's an active DCA
+  const hasActiveOrder =
     typeof currentHash === "string" && currentHash !== zeroHash;
 
+  // 3️⃣ Read dcaParamsOf(currentHash) only if active
   const { data: paramsRaw, isLoading: loadingParams } = useReadContract({
     address: VAULT_CONTRACT_ADDRESS as Address,
     abi: VAULT_ABI,
     functionName: "dcaParamsOf",
-    args: shouldFetchParams ? [currentHash as `0x${string}`] : undefined,
+    args: hasActiveOrder ? [currentHash as `0x${string}`] : undefined,
     query: {
-      enabled: shouldFetchParams,
+      enabled: hasActiveOrder,
       refetchInterval: 10_000,
     },
   });
 
   return {
+    /** User’s WETH balance in the vault (as a decimal string) */
     balance: balanceRaw ? formatEther(balanceRaw as bigint) : null,
+    /** The current DCA order hash, if any */
     currentHash: currentHash as `0x${string}` | undefined,
+    /** On‐chain parameters for the active DCA */
     params: paramsRaw as DcaParams | undefined,
+    /** True if there is a non‐zero active DCA order */
+    hasActiveOrder,
+    /** True if any of the reads are still loading */
     isLoading: loadingBalance || loadingHash || loadingParams,
   };
 }

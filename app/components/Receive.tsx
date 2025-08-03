@@ -8,35 +8,35 @@ import { usePrices } from "@/app/hooks/usePrices";
 
 type Props = {
   amount: string; // ETH entered by user
-  duration: number | string; // input in Action panel
+  duration: number | string; // e.g. 7
   unit: "Days" | "Weeks" | "Months";
   params?: {
-    startTime: bigint; // on-chain, seconds
-    deltaTime: bigint; // seconds between slices
+    startTime: bigint; // seconds
+    deltaTime: bigint; // seconds
   };
 };
 
 /**
- * Displays the estimated WBTC received per slice and
- * a human-readable “next swap” timer.
+ * Shows the WBTC you’ll receive (live quote) and
+ * a timer until the next slice.
  */
-export default function Receive({ amount, duration, unit, params }: Props) {
-  const { ethUsd, wbtcUsd, isLoading } = usePrices();
+export default function Receive({ amount, unit, params, duration }: Props) {
+  const { wbtcPerEth, isLoading } = usePrices();
 
+  // How many WBTC does `amount` ETH buy? ETH amount × (WBTC per ETH)
   const wbtcEst = useMemo(() => {
+    if (!wbtcPerEth) return 0;
     const eth = Number(amount || 0);
-    if (!ethUsd || !wbtcUsd) return 0;
-    return (eth * ethUsd) / wbtcUsd; // ETH→USD / WBTC→USD
-  }, [amount, ethUsd, wbtcUsd]);
-
-  /* Fallback: based purely on UI cadence (before on-chain params exist) */
+    return eth * wbtcPerEth; // ETH × (WBTC per ETH) = WBTC
+  }, [amount, wbtcPerEth]);
+  /* UI-only fallback timer */
   const uiNextSlice = useMemo(() => {
     const mul = unit === "Weeks" ? 7 : unit === "Months" ? 30 : 1;
     const next = add(new Date(), { days: mul });
-    return formatDistanceToNowStrict(next, { unit: "hour" }); // e.g. "in 23 h"
+    return formatDistanceToNowStrict(next, { unit: "hour" });
   }, [unit]);
 
-  /* On-chain timer: (startTime + deltaTime) – now */
+  /* On-chain timer (once params exist) */
   const chainNextSlice = useMemo(() => {
     if (!params) return null;
     const targetMs = Number(params.startTime + params.deltaTime) * 1000;

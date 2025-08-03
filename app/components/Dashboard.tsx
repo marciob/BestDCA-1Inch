@@ -4,19 +4,30 @@
 import Card from "./Card";
 import { useVaultInfo } from "@/app/hooks/useVaultInfo";
 import { useFills } from "@/app/hooks/useFills";
-import { useBtcPrice } from "@/app/hooks/useBtcPrice";
+import { usePrices } from "@/app/hooks/usePrices";
 
 export default function Dashboard() {
   /* ── live vault data ───────────────────────────── */
   const { balance, isLoading: loadingInfo } = useVaultInfo();
 
-  /* ── recent fill history (polls every 20 s) ─────── */
+  /* ── recent fill history ────────────────────────── */
   const { fills, isLoading: loadingFills, realised } = useFills();
-  const { price: btcUsd, isLoading: loadingPrice } = useBtcPrice();
+
+  /* ── live price ratio (WBTC per ETH) ───────────── */
+  const { wbtcPerEth, isLoading: loadingRatio } = usePrices();
+
+  /* ── compute average cost vs market ─────────────── */
+  const marketCostEth = wbtcPerEth ? 1 / wbtcPerEth : 0; // WETH needed for 1 WBTC
+  const avgCostEth =
+    realised.wbtcRecv > 0 ? realised.ethSpent / realised.wbtcRecv : 0;
+  const diffPct =
+    marketCostEth > 0
+      ? ((marketCostEth - avgCostEth) / marketCostEth) * 100
+      : 0;
 
   return (
     <div className="flex w-full flex-col gap-6">
-      {/*  ░░░  TOP CARDS  ░░░  */}
+      {/*  ── TOP CARDS ──────────────────────────────── */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* WETH balance */}
         <Card title="WETH in Vault">
@@ -29,39 +40,31 @@ export default function Dashboard() {
           )}
         </Card>
 
-        {/* Live average cost */}
+        {/* Live average WBTC cost (in ETH/WBTC) */}
         <Card title="Your Avg WBTC Cost">
-          {loadingFills || loadingPrice ? (
+          {loadingFills || loadingRatio ? (
             <div className="h-8 w-32 animate-pulse rounded bg-gray-700/50" />
           ) : realised.wbtcRecv === 0 ? (
             <p className="text-sm text-gray-400">No fills yet</p>
           ) : (
             <>
               <p className="text-3xl font-bold text-white">
-                $
-                {(realised.ethSpent * (btcUsd! / realised.wbtcRecv)).toFixed(2)}
+                {avgCostEth.toFixed(5)}{" "}
+                <span className="text-xl">ETH/WBTC</span>
               </p>
               <p
                 className={`text-sm ${
-                  realised.ethSpent * (btcUsd! / realised.wbtcRecv) < btcUsd!
-                    ? "text-green-400"
-                    : "text-red-400"
+                  diffPct < 0 ? "text-red-400" : "text-green-400"
                 }`}
               >
-                {(
-                  ((btcUsd! -
-                    realised.ethSpent * (btcUsd! / realised.wbtcRecv)) /
-                    btcUsd!) *
-                  100
-                ).toFixed(1)}
-                % vs market
+                {Math.abs(diffPct).toFixed(1)}% vs market
               </p>
             </>
           )}
         </Card>
       </div>
 
-      {/*  ░░░  FILL FEED  ░░░  */}
+      {/*  ── FILL FEED ──────────────────────────────── */}
       <Card title="Recent Accumulations">
         {loadingFills ? (
           <p className="text-sm text-gray-400">Loading fills…</p>
@@ -71,7 +74,6 @@ export default function Dashboard() {
           <ul role="list" className="-mb-8 flow-root">
             {fills.map((fill, idx) => (
               <li key={fill.rowKey}>
-                {" "}
                 <div className="relative pb-8">
                   {idx !== fills.length - 1 && (
                     <span
@@ -79,9 +81,7 @@ export default function Dashboard() {
                       aria-hidden="true"
                     />
                   )}
-
                   <div className="relative flex items-center space-x-3">
-                    {/* green check icon */}
                     <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500 ring-8 ring-gray-900">
                       <svg
                         className="h-5 w-5 text-white"
@@ -95,7 +95,6 @@ export default function Dashboard() {
                         />
                       </svg>
                     </span>
-
                     <div className="flex min-w-0 flex-1 justify-between space-x-4">
                       <div>
                         <p className="text-md text-white">
@@ -106,7 +105,6 @@ export default function Dashboard() {
                           Filled via {fill.chain}
                         </p>
                       </div>
-
                       <time
                         className="whitespace-nowrap text-right text-sm text-gray-500"
                         dateTime={fill.time}
