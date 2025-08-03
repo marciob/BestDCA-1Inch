@@ -1,4 +1,3 @@
-// app/components/SwapWidget.tsx
 "use client";
 
 import { useState } from "react";
@@ -9,7 +8,7 @@ import Action from "./Action";
 import Receive from "./Receive";
 import ChainSelector from "./ChainSelector";
 
-// A small component for the Bitcoin logo to keep the main component clean
+// A small component for the Bitcoin logo
 const BitcoinIcon = () => (
   <Image
     src="/btc_logo.png"
@@ -24,6 +23,14 @@ export default function SwapWidget() {
   const [activeTab, setActiveTab] = useState<"dca" | "settle">("dca");
   const [isSettingsOpen, setSettingsOpen] = useState(false);
 
+  // Dynamically set the CTA text and color based on the active tab
+  const ctaText =
+    activeTab === "dca" ? "Connect Wallet" : "Get Settlement Quote";
+  const ctaColor =
+    activeTab === "dca"
+      ? "bg-blue-600 hover:bg-blue-700"
+      : "bg-purple-600 hover:bg-purple-700";
+
   const TabButton = ({
     tabName,
     label,
@@ -33,7 +40,7 @@ export default function SwapWidget() {
   }) => (
     <button
       onClick={() => setActiveTab(tabName)}
-      className={`w-full rounded-t-lg py-2.5 text-center font-semibold ${
+      className={`w-full rounded-t-lg py-2.5 text-center font-semibold transition-colors ${
         activeTab === tabName
           ? "bg-gray-900/50 text-white"
           : "bg-transparent text-gray-400 hover:bg-gray-800/50"
@@ -53,72 +60,78 @@ export default function SwapWidget() {
         </div>
 
         {/* Main Content Area */}
-        <div className="rounded-b-2xl rounded-tr-2xl border border-gray-800 bg-gray-900/50 p-4 backdrop-blur-md">
-          {/* DCA View */}
-          {activeTab === "dca" && (
-            <div>
-              <div className="mb-4 flex items-center justify-between px-2">
-                <h2 className="text-xl font-bold text-white">Setup DCA</h2>
-                <button
-                  onClick={() => setSettingsOpen(true)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  {/* --- 2. REPLACE THE SVG WITH THE NEW ICON COMPONENT --- */}
-                  <IoMdSettings className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="space-y-2">
-                <Action />
-                <Receive />
-              </div>
-              <div className="mt-4">
-                <button className="w-full rounded-xl bg-blue-600 py-4 text-xl font-semibold text-white hover:bg-blue-700">
-                  Connect Wallet
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Settle View */}
-          {activeTab === "settle" && (
-            <div>
-              <div className="mb-4 flex items-center justify-between px-2">
-                <h2 className="text-xl font-bold text-white">Settle WBTC</h2>
-              </div>
-              <div className="space-y-4">
-                <div className="rounded-xl bg-gray-800 p-4 text-center">
-                  <p className="text-sm text-gray-400">Accumulated Balance</p>
-                  <p className="text-2xl font-bold text-white">0.0145 WBTC</p>
+        <div className="flex h-[480px] flex-col rounded-b-2xl rounded-tr-2xl border border-gray-800 bg-gray-900/50 p-4 backdrop-blur-md">
+          {/* This new wrapper will grow to fill the available space, pushing the CTA button down */}
+          <div className="flex-grow">
+            {/* DCA View */}
+            {activeTab === "dca" && (
+              <>
+                <div className="mb-4 flex items-center justify-between px-2">
+                  <h2 className="text-xl font-bold text-white">Setup DCA</h2>
+                  <button
+                    onClick={() => setSettingsOpen(true)}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    <IoMdSettings className="h-5 w-5" />
+                  </button>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-400">
-                    Settle to Prize Chain
-                  </label>
-                  <div className="mt-2">
-                    <ChainSelector chainName="Bitcoin" icon={<BitcoinIcon />} />
+                <div className="space-y-2">
+                  <Action />
+                  <Receive />
+                </div>
+              </>
+            )}
+
+            {/* --- SETTLE VIEW (UPDATED FOR BETTER HORIZONTAL LAYOUT) --- */}
+            {activeTab === "settle" && (
+              <>
+                <div className="mb-4 flex items-center justify-between px-2">
+                  <h2 className="text-xl font-bold text-white">Settle WBTC</h2>
+                  <div className="h-5 w-5"></div>
+                </div>
+                <div className="space-y-2">
+                  {/* "From" block */}
+                  <div className="rounded-xl bg-gray-800 p-4">
+                    <div className="text-sm font-medium text-gray-400">
+                      From Polygon
+                    </div>
+                    <div className="mt-2 text-3xl font-bold text-white">
+                      0.0145 WBTC
+                    </div>
+                  </div>
+
+                  {/* "To" block */}
+                  <div className="rounded-xl bg-gray-800 p-4">
+                    <label className="block text-sm font-medium text-gray-400 mb-2">
+                      To Prize Chain
+                    </label>
+                    <div className="flex items-center justify-between rounded-lg bg-gray-900 p-1">
+                      <input
+                        id="dest_address"
+                        name="dest_address"
+                        type="text"
+                        placeholder="Enter address..."
+                        className="w-full bg-transparent p-2 text-base font-medium text-white placeholder-gray-500 focus:outline-none"
+                      />
+                      <ChainSelector
+                        chainName="Bitcoin"
+                        icon={<BitcoinIcon />}
+                      />
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <label
-                    htmlFor="dest_address"
-                    className="text-sm font-medium text-gray-400"
-                  >
-                    Destination Bitcoin Address
-                  </label>
-                  <input
-                    id="dest_address"
-                    name="dest_address"
-                    type="text"
-                    placeholder="bc1q..."
-                    className="mt-2"
-                  />
-                </div>
-                <button className="w-full rounded-xl bg-purple-600 py-4 text-xl font-semibold text-white hover:bg-purple-700">
-                  Get Settlement Quote
-                </button>
-              </div>
-            </div>
-          )}
+              </>
+            )}
+          </div>
+
+          {/* UNIFIED CTA BUTTON - Stays at the bottom due to flexbox */}
+          <div className="mt-4">
+            <button
+              className={`w-full rounded-xl py-4 text-xl font-semibold text-white transition-colors ${ctaColor}`}
+            >
+              {ctaText}
+            </button>
+          </div>
         </div>
       </div>
 
