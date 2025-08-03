@@ -1,1 +1,14 @@
 @import "tailwindcss";
+
+body {
+  background-color: #0d1117;
+  color: #e6edf3;
+}
+
+/* Custom styles for inputs to look good in dark mode */
+@layer base {
+  input[type="number"],
+  input[type="text"] {
+    @apply w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500;
+  }
+}
