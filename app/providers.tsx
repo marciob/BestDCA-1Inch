@@ -31,7 +31,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider>
           {children}
-          <Toaster position="top-right" />
+          <Toaster
+            position="top-right"
+            containerStyle={{
+              top: 100, // or whatever value pushes it below the Connect Wallet button
+            }}
+          />
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>

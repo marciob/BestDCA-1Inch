@@ -9,7 +9,9 @@ import {
   useWriteContract,
   useWaitForTransactionReceipt,
 } from "wagmi";
+import { baseSepolia } from "wagmi/chains";
 import { parseEther } from "viem";
+import { formatDistance } from "date-fns";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import SettingsModal from "./SettingsModal";
 import Action from "./Action";
@@ -41,7 +43,8 @@ export default function SwapWidget() {
   const { writeContract } = useWriteContract();
   const mounted = useHasMounted();
 
-  const [txHash, setTxHash] = useState<`0x${string}` | undefined>(undefined);
+  const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
+  const [sentAt, setSentAt] = useState<Date | null>(null);
 
   const {
     isLoading: isMining,
@@ -50,34 +53,42 @@ export default function SwapWidget() {
     error,
   } = useWaitForTransactionReceipt({
     hash: txHash,
+    confirmations: 1,
+    chainId: baseSepolia.id,
     query: { enabled: !!txHash },
   });
 
   // Handle transaction success/error with useEffect
   useEffect(() => {
     if (isSuccess && txHash) {
+      toast.dismiss(); // close the spinner
       toast.success(
         <span>
-          Deposit confirmed —
+          Deposit <b>confirmed</b>&nbsp;—&nbsp;
           <a
             href={`https://sepolia.basescan.org/tx/${txHash}`}
             target="_blank"
             className="underline"
           >
-            view on explorer
+            view&nbsp;on&nbsp;explorer
           </a>
         </span>
       );
       setTxHash(undefined);
+      setSentAt(null);
     }
   }, [isSuccess, txHash]);
 
   useEffect(() => {
     if (isError && error) {
+      toast.dismiss();
       toast.error(error.message);
       setTxHash(undefined);
+      setSentAt(null);
     }
   }, [isError, error]);
+
+  /* -------------------------- send tx --------------------------- */
 
   const handleDepositAndDCA = () => {
     toast.loading("Waiting for wallet…");
@@ -90,8 +101,39 @@ export default function SwapWidget() {
       },
       {
         onSuccess(hash) {
-          toast.dismiss(); // remove “waiting” toast
-          toast.loading("Transaction submitted, mining…");
+          toast.dismiss();
+          // show spinner w/ elapsed time & explorer link
+          toast(
+            (t) => (
+              <div className="flex items-center gap-2">
+                <svg
+                  className="h-4 w-4 animate-spin"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                </svg>
+                <span>
+                  Mining&nbsp;(
+                  {formatDistance(sentAt ?? new Date(), new Date(), {
+                    includeSeconds: true,
+                  })}
+                  ) —&nbsp;
+                  <a
+                    href={`https://sepolia.basescan.org/tx/${hash}`}
+                    target="_blank"
+                    className="underline"
+                  >
+                    explorer
+                  </a>
+                </span>
+              </div>
+            ),
+            { id: "txSpinner", duration: Infinity } // keep until we dismiss
+          );
+          setSentAt(new Date());
           setTxHash(hash);
         },
         onError(err: Error) {
